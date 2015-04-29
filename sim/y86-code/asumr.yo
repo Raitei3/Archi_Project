@@ -1,0 +1,48 @@
+                      | # Execution begins at address 0
+  0x000:              | 	.pos 0
+  0x000: 208400040000 | init:	irmovl Stack, %esp  	# Set up Stack pointer
+  0x006: 208500040000 | 	irmovl Stack, %ebp  	# Set up base pointer
+  0x00c: 7024000000   | 	jmp Main		# Execute main program
+                      | 
+                      | # Array of 4 elements
+  0x014:              | 	.align 4
+  0x014: 0d000000     | array:	.long 0xd
+  0x018: c0000000     | 	.long 0xc0
+  0x01c: 000b0000     | 	.long 0xb00
+  0x020: 00a00000     | 	.long 0xa000
+                      | 
+  0x024: 208004000000 | Main:	irmovl 4,%eax
+  0x02a: a008         | 	pushl %eax	# Push 4
+  0x02c: 208214000000 | 	irmovl array,%edx
+  0x032: a028         | 	pushl %edx      # Push array
+  0x034: 803a000000   | 	call rSum	# Sum(array, 4)
+  0x039: 10           | 	halt
+                      | 
+                      | /* $begin rsum-ys */
+                      | 	# int Sum(int *Start, int Count)
+  0x03a: a058         | rSum:	pushl %ebp
+  0x03c: 204500000000 | 	rrmovl %esp,%ebp
+  0x042: a038         | 	pushl %ebx           # Save value of %ebx
+  0x044: 503508000000 | 	mrmovl 8(%ebp),%ebx  # Get Start
+  0x04a: 50050c000000 | 	mrmovl 12(%ebp),%eax # Get Count
+  0x050: 62000c000000 | 	andl %eax,%eax       # Test value of Count
+  0x056: 7193000000   | 	jle L38              # If <= 0, goto zreturn
+  0x05b: 2082ffffffff | 	irmovl -1,%edx
+  0x061: 6020ffffffff | 	addl %edx,%eax       # Count--
+  0x067: a008         | 	pushl %eax           # Push Count
+  0x069: 208204000000 | 	irmovl 4,%edx
+  0x06f: 203004000000 | 	rrmovl %ebx,%eax
+  0x075: 602004000000 | 	addl %edx,%eax       
+  0x07b: a008         | 	pushl %eax           # Push Start+1
+  0x07d: 803a000000   | 	call rSum            # Sum(Start+1, Count-1)
+  0x082: 502300000000 | 	mrmovl (%ebx),%edx
+  0x088: 602000000000 | 	addl %edx,%eax       # Add *Start
+  0x08e: 7099000000   | 	jmp L39              # goto done
+  0x093: 630000000000 | L38:	xorl %eax,%eax       # zreturn:
+  0x099: 5035fcffffff | L39:	mrmovl -4(%ebp),%ebx # done: Restore %ebx
+  0x09f: 2054fcffffff | 	rrmovl %ebp,%esp     # Deallocate stack frame
+  0x0a5: b058         | 	popl %ebp            # Restore %ebp
+  0x0a7: 90           | 	ret
+                      | /* $end rsum-ys */
+  0x400:              | 	.pos 0x400
+  0x400:              | Stack:	# The stack goes here

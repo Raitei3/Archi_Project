@@ -1,0 +1,5 @@
+                      | # prog6: Forwarding Priority
+  0x000: 20820a000000 |   irmovl 10,%edx
+  0x006: 208203000000 |   irmovl  3,%edx
+  0x00c: 202003000000 |   rrmovl %edx,%eax
+  0x012: 10           |   halt

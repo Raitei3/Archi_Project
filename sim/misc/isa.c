@@ -49,18 +49,18 @@ instr_t instruction_set[] =
 {
     {"nop",    HPACK(I_NOP, 0), 1, NO_ARG, 0, 0, NO_ARG, 0, 0 },
     {"halt",   HPACK(I_HALT, 0), 1, NO_ARG, 0, 0, NO_ARG, 0, 0 },
-    {"rrmovl", HPACK(I_RRMOVL, 0), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"rrmovl", HPACK(I_RRMOVL, 0), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
     /* arg1hi indicates number of bytes */
     {"irmovl", HPACK(I_IRMOVL, 0), 6, I_ARG, 2, 4, R_ARG, 1, 0 },
     {"rmmovl", HPACK(I_RMMOVL, 0), 6, R_ARG, 1, 1, M_ARG, 1, 0 },
     {"mrmovl", HPACK(I_MRMOVL, 0), 6, M_ARG, 1, 0, R_ARG, 1, 1 },
-    {"addl",   HPACK(I_ALU, A_ADD), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
-    {"subl",   HPACK(I_ALU, A_SUB), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
-    {"andl",   HPACK(I_ALU, A_AND), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
-    {"xorl",   HPACK(I_ALU, A_XOR), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"addl",   HPACK(I_ALU, A_ADD), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"subl",   HPACK(I_ALU, A_SUB), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"andl",   HPACK(I_ALU, A_AND), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"xorl",   HPACK(I_ALU, A_XOR), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
     /* JB ajout sall et sarl (shift arithmetic left/right) */
-    {"sall",   HPACK(I_ALU, A_SAL), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
-    {"sarl",   HPACK(I_ALU, A_SAR), 2, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"sall",   HPACK(I_ALU, A_SAL), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
+    {"sarl",   HPACK(I_ALU, A_SAR), 6, R_ARG, 1, 1, R_ARG, 1, 0 },
     /* arg1hi indicates number of bytes */
     {"jmp",    HPACK(I_JXX, J_YES), 5, I_ARG, 1, 4, NO_ARG, 0, 0 },
     {"jle",    HPACK(I_JXX, J_LE), 5, I_ARG, 1, 4, NO_ARG, 0, 0 },
@@ -73,6 +73,8 @@ instr_t instruction_set[] =
     {"ret",    HPACK(I_RET, 0), 1, NO_ARG, 0, 0, NO_ARG, 0, 0 },
     {"pushl",  HPACK(I_PUSHL, 0) , 2, R_ARG, 1, 1, NO_ARG, 0, 0 },
     {"popl",   HPACK(I_POPL, 0) ,  2, R_ARG, 1, 1, NO_ARG, 0, 0 },
+    {"enter",  HPACK(I_ENTER, 0),  1 ,NO_ARG, 0, 0, NO_ARG , 0, 0 },
+    {"enter1",  HPACK(I_ENTER, 1),  1 ,NO_ARG, 0, 0, NO_ARG , 0, 0 },
     /* JB versions immédiates de toutes les opérations */
     {"iaddl",  HPACK(I_ALUI, A_ADD),  6, I_ARG, 2, 4, R_ARG, 1, 0 },
     {"isubl",  HPACK(I_ALUI, A_SUB),  6, I_ARG, 2, 4, R_ARG, 1, 0 },
@@ -709,7 +711,7 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	set_reg_val(s->r, lo1, val);
 	s->pc = ftpc;
 	break;
-    case I_IRMOVL:
+    /*case I_IRMOVL:
 	if (!ok1) {
 	    if (error_file)
 		fprintf(error_file,
@@ -733,6 +735,7 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	set_reg_val(s->r, lo1, cval);
 	s->pc = ftpc;
 	break;
+	*/
     case I_RMMOVL:
 	if (!ok1) {
 	    if (error_file)
@@ -922,7 +925,7 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	set_reg_val(s->r, REG_EBP, val);
 	s->pc = ftpc;
 	break;
-    case I_ALUI:
+    /*case I_ALUI:
 	if (!ok1) {
 	    if (error_file)
 		fprintf(error_file,
@@ -949,6 +952,7 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	s->cc = compute_cc(A_ADD, cval, argB);
 	s->pc = ftpc;
 	break;
+	*/
     default:
 	if (error_file)
 	    fprintf(error_file,

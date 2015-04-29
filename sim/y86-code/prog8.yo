@@ -1,0 +1,13 @@
+                      | # Demonstrate branch cancellation
+                      | # /* $begin prog8-ys */
+                      | # prog8
+  0x000: 630000000000 |    xorl %eax,%eax 
+  0x006: 7412000000   |    jne  target        # Not taken
+  0x00b: 208001000000 |    irmovl 1, %eax    # Fall through
+  0x011: 10           |    halt
+  0x012:              | target:
+  0x012: 208202000000 |    irmovl 2, %edx    # Target
+  0x018: 208303000000 |    irmovl 3, %ebx    # Target+1
+                      | # /* $end prog8-ys */
+  0x01e: 10           |    halt
+                      | 

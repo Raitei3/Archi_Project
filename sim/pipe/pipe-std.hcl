@@ -38,6 +38,8 @@ intsig JMEM	'I_JMEM'
 intsig JREG	'I_JREG'
 intsig LEAVE	'I_LEAVE'
 
+intsig ENTER 'I_ENTER'
+
 ##### Symbolic representation of Y86 Registers referenced explicitly #####
 intsig RESP     'REG_ESP'    	# Stack Pointer
 intsig REBP     'REG_EBP'    	# Frame Pointer
@@ -65,6 +67,7 @@ intsig D_icode 'if_id_curr->icode'	# Instruction code
 intsig D_rA 'if_id_curr->ra'	# rA field from instruction
 intsig D_rB 'if_id_curr->rb'	# rB field from instruction
 intsig D_valP 'if_id_curr->valp'	# Incremented PC
+intsig D_ifun 'if_id_curr->ifun'
 
 ##### Intermediate Values in Decode Stage  #########################
 
@@ -125,15 +128,21 @@ int f_pc = [
 
 # Does fetched instruction require a regid byte?
 bool need_regids =
-	f_icode in { RRMOVL, OPL, IOPL, PUSHL, POPL, IRMOVL, RMMOVL, MRMOVL };
+	f_icode in { RRMOVL, OPL, PUSHL, POPL, RMMOVL, MRMOVL };
 
 # Does fetched instruction require a constant word?
 bool need_valC =
-	f_icode in { IRMOVL, RMMOVL, MRMOVL, JXX, CALL, IOPL };
+	f_icode in { RRMOVL, RMMOVL, MRMOVL, JXX, CALL, OPL };
 
 bool instr_valid = f_icode in 
-	{ NOP, HALT, RRMOVL, IRMOVL, RMMOVL, MRMOVL,
-	       OPL, IOPL, JXX, CALL, RET, PUSHL, POPL };
+	{ NOP, HALT, RRMOVL, RMMOVL, MRMOVL,
+	       OPL, JXX, CALL, RET, PUSHL, POPL, ENTER };
+
+int instr_next_ifun =[
+	f_icode == ENTER && f_ifun== 0 :1;
+	#f_icode == OPL : 0;
+			1 : -1;
+	];
 
 # Predict next value of PC
 int new_F_predPC = [
@@ -147,22 +156,25 @@ int new_F_predPC = [
 
 ## What register should be used as the A source?
 int new_E_srcA = [
+	D_icode == ENTER && D_ifun == 0 : REBP;
 	D_icode in { RRMOVL, RMMOVL, OPL, PUSHL } : D_rA;
-	D_icode in { POPL, RET } : RESP;
+	D_icode in { POPL, RET, ENTER } : RESP;
 	1 : RNONE; # Don't need register
 ];
 
 ## What register should be used as the B source?
 int new_E_srcB = [
-	D_icode in { OPL, IOPL, RMMOVL, MRMOVL } : D_rB;
-	D_icode in { PUSHL, POPL, CALL, RET } : RESP;
+	D_icode == ENTER && D_ifun == 0 : RESP;
+	D_icode in { OPL, RMMOVL, MRMOVL } : D_rB;
+	D_icode in { PUSHL, POPL, CALL, RET} : RESP;
 	1 : RNONE;  # Don't need register
 ];
 
 ## What register should be used as the E destination?
 int new_E_dstE = [
-	D_icode in { RRMOVL, IRMOVL, OPL, IOPL } : D_rB;
-	D_icode in { PUSHL, POPL, CALL, RET } : RESP;
+	D_icode == ENTER && D_ifun == 1 : REBP;
+	D_icode in { RRMOVL, OPL } : D_rB;
+	D_icode in { PUSHL, POPL, CALL, RET,ENTER } : RESP;
 	1 : DNONE;  # Don't need register DNONE, not RNONE
 ];
 
@@ -197,29 +209,34 @@ int new_E_valB = [
 
 ## Select input A to ALU
 int aluA = [
-	E_icode in { RRMOVL, OPL } : E_valA;
-	E_icode in { IRMOVL, RMMOVL, MRMOVL, IOPL } : E_valC;
-	E_icode in { CALL, PUSHL } : -4;
+	E_icode == OPL && E_srcA== RNONE:E_valC;
+	E_icode == OPL : E_valA;
+	E_icode == RRMOVL && E_srcA== RNONE:E_valC;
+	E_icode == RRMOVL : E_valA;
+	E_icode == ENTER && E_ifun == 1 : E_valA;
+	E_icode in { RMMOVL, MRMOVL } : E_valC;
+	E_icode in { CALL, PUSHL, ENTER } : -4;
 	E_icode in { RET, POPL } : 4;
 	# Other instructions don't need ALU
 ];
 
 ## Select input B to ALU
 int aluB = [
-	E_icode in { RMMOVL, MRMOVL, OPL, IOPL, CALL, 
-		      PUSHL, RET, POPL } : E_valB;
-	E_icode in { RRMOVL, IRMOVL } : 0;
+E_icode == ENTER && E_ifun == 1 : 0;
+	E_icode in { RMMOVL, MRMOVL, OPL, CALL, 
+		      PUSHL, RET, POPL,ENTER } : E_valB;
+	E_icode in { RRMOVL } : 0;
 	# Other instructions don't need ALU
 ];
 
 ## Set the ALU function
 int alufun = [
-	E_icode in { OPL, IOPL } : E_ifun;
+	E_icode in { OPL } : E_ifun;
 	1 : ALUADD;
 ];
 
 ## Should the condition codes be updated?
-bool set_cc = E_icode in { OPL, IOPL };
+bool set_cc = E_icode in { OPL};
 
 
 ################ Memory Stage ######################################
@@ -228,6 +245,7 @@ bool set_cc = E_icode in { OPL, IOPL };
 int mem_addr = [
 M_icode in { RMMOVL, PUSHL, CALL, MRMOVL } : M_valE;
 	M_icode in { POPL, RET } : M_valA;
+	M_icode==ENTER && M_ifun==0 : M_valE;
 	# Other instructions don't need address
 ];
 
@@ -235,7 +253,7 @@ M_icode in { RMMOVL, PUSHL, CALL, MRMOVL } : M_valE;
 bool mem_read = M_icode in { MRMOVL, POPL, RET };
 
 ## Set write control signal
-bool mem_write = M_icode in { RMMOVL, PUSHL, CALL };
+bool mem_write = M_icode in { RMMOVL, PUSHL, CALL } || (M_icode==ENTER && M_ifun==0);
 
 
 ################ Pipeline Register Control #########################

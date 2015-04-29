@@ -1,0 +1,15 @@
+                      | 
+  0x000: 208501000000 | irmovl 1,%ebp
+  0x006: 208400020000 | irmovl stack,%esp
+  0x00c: a058         | pushl %ebp
+  0x00e: 204500020000 | rrmovl %esp,%ebp
+  0x014: 205400020000 | rrmovl %ebp,%esp
+  0x01a: c058         | popl %ebp
+  0x01c: d0           | enter
+  0x01d: 205400020000 | rrmovl %ebp,%esp
+  0x023: c058         | popl %ebp
+                      | 
+                      | 
+                      | 
+  0x200:              | .pos 0x200
+  0x200:              | stack:

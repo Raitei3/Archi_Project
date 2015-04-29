@@ -1,0 +1,15 @@
+  0x000: 208601000000 | 	      irmovl 1, %esi
+  0x006: 208702000000 | 	      irmovl 2, %edi
+  0x00c: 208504000000 | 	      irmovl 4, %ebp
+  0x012: 2080e0ffffff | 	      irmovl -32, %eax
+  0x018: 208240000000 | 	      irmovl 64, %edx
+  0x01e: 612040000000 | 	      subl %edx,%eax
+  0x024: 732b000000   | 	      je target
+  0x029: 00           | 	      nop
+  0x02a: 10           |               halt
+  0x02b:              | target:
+  0x02b: 606200000000 | 	      addl %esi,%edx
+  0x031: 00           | 	      nop
+  0x032: 00           |               nop
+  0x033: 00           |               nop
+  0x034: 10           | 	      halt

@@ -1,0 +1,15 @@
+
+irmovl 1,%ebp
+irmovl stack,%esp
+pushl %ebp
+rrmovl %esp,%ebp
+rrmovl %ebp,%esp
+popl %ebp
+enter
+rrmovl %ebp,%esp
+popl %ebp
+
+
+
+.pos 0x200
+stack:
