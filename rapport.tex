@@ -1,0 +1,93 @@
+\documentclass[12pt]{article}
+
+% Chargement des packages nécessaires
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{graphicx}
+
+
+% Définition de la page de garde avec titre, auteurs, date
+
+\title{Architecture des Ordinateurs : Rapport de Projet}
+
+\author{Licence 2 d'Informatique\\ 
+  Architecture des Ordinateurs\\
+  Projet de Borde Antoine et Clement Nerestand}
+
+\date{\today}
+
+% Début du document
+\begin{document}
+
+% Chargement page de garde
+\maketitle
+
+% Permet de sauter 5 lignes
+\vspace{5\baselineskip}
+% Résumé du rapport
+\abstract{Ce rapport tient lieu de compte-rendu du binôme composé de Paul Beziau et Candice Bentéjac (groupe IN400A2) dans le cadre du projet d'architecture des ordinateurs (UE Architecture des Ordinateurs).}
+
+% Nouvelle page
+\newpage
+
+% Chargement table des matières
+\tableofcontents
+\newpage
+
+\section*{Introduction}
+\paragraph{}Dans le cadre de l'Unité d'Enseignement ``Architecture des Ordinateurs'' (INF 155), il nous a été demandé de réaliser un projet consistant à modifier les fichiers sources des simulateurs d'architecture Y86, et ce tant sur la version {\itshape séquentielle} que sur la version {\itshape pipelinée}. Ce projet était constitué de trois parties, présentées sous forme d'exercices.
+
+\paragraph{}Le premier exercice consistait à libérer des emplacements parmi les {\itshape opcodes} Y86. Il nous fallait donc factoriser des instructions peu ou prou semblables afin de pouvoir les utiliser avec un seul {\itshape opcode} plutôt que plusieurs.
+
+\paragraph{}Le deuxième exercice avait pour but de nous faire modifier l'architecture afin que cette dernière soit capable de supporter des instructions s'exécutant sur plusieurs cycles, c'est-à-dire des instructions qui sont équivalentes à des enchaînements de plusieurs instructions.
+
+A titre d'exemple, on peut parler de l'instruction X86 \verb+enter+ (décrite dans le projet) qui est équivalente à \verb+push %ebp+ suivi de \verb+rrmovl+\\ \verb+%esp,%ebp+.
+
+\paragraph{}Enfin, le troisième exercice nous demandait d'ajouter plusieurs instructions à l'architecture, et notamment l'instruction \verb+enter+.
+
+\paragraph{}Ce rapport est le compte-rendu du travail sur le projet que notre binôme, constitué de Paul Beziau et de Candice Bentéjac (groupe IN400A2), a effectué.
+
+\newpage
+
+
+\section{Exercice 1 : De la place dans les opcodes}
+\subsection{Factorisation de iaddl etc. avec addl etc.}
+\paragraph{}Il nous a été demandé, dans un premier temps, de factoriser l'opérande \verb+iopl+ avec \verb+opl+ afin de libérer l'{\itshape opcode} \verb+I_ALUI+. Les instructions que nous factorisions étaient alors toutes celles utilisant l'ALU (et effectuant donc des calculs), telles que \verb+iaddl+ ou \verb+isubl+, par exemple.
+
+\paragraph{}Pour effectuer cette factorisation, nous avons commencé par modifier les fichiers \verb+misc/isa.h+ et \verb+misc/isa.c+ comme indiqué dans le sujet. Cela nous a permis de libérer l'{\itshape opcode} \verb+I_ALUI+ et de le transformer en \verb+I_FREE1+, qui ne correspondait désormais plus à aucune opération.
+
+\paragraph{}Une fois ces premières modifications effectuées, il nous a fallu éditer les fichiers HCL \verb+seq/seq-std.hcl+ et \verb+pipe/pipe-std.hcl+ de sorte à ce que les instructions \verb+IOPL+, désormais confondues avec les instructions \verb+OPL+, puissent être différenciées de ces dernières.
+
+\paragraph{}Nous nous sommes rapidement retrouvés confrontés à un problème : les instructions \verb+IOPL+ et \verb+OPL+ n'étaient pas codées sur le même nombre de bits, ce qui occasionnait des conflits : les instructions \verb+OPL+ étaient codées sur 2 bits, tandis que les instructions \verb+IOPL+ étaient codées sur 6 bits. Il nous a donc fallu harmoniser cela pour éviter des erreurs.
+
+\paragraph{}Nous avons alors modifié le fichier \verb+misc/isa.c+ dans lequel se trouvait un tableau comprenant toutes les instructions ainsi que le nombre de bits sur lequel elles étaient codées : nous avons indiqué que les instructions \verb+opl+ étaient désormais codées sur 6 bits plutôt que sur 2. Ainsi, si l'on utilise une instruction \verb+IOPL+, bien que celle-ci soit confondue avec une instruction \verb+OPL+ du point de vue de l'{\itshape opcode} (puisque \verb+I_ALUI+ = \verb+I_ALU+) et donc par défaut codée sur 2 bits, elle sera correctement codée sur les 6 bits dont elle a besoin. 
+
+IMAGES TABLEAU (?)
+
+\paragraph{}Une fois cela fait, nous avons modifié le fichier HCL de la version séquentielle du simulateur (\verb+misc/seq-std.hcl+). Nous avons commencé par supprimer les opérandes \verb+IOPL+ à chaque fois qu'ils étaient accolés à un opérande \verb+OPL+. En effet, leur {\itshape opcode} étant identique, il n'était plus nécessaire de conserver des ``doublons''.
+
+\paragraph{}Pour néanmoins distinguer \verb+IOPL+ d'\verb+OPL+, nous avons utilisé le chargement de registre comme critère puisque \verb+IOPL+ charge une constante alors que \verb+OPL+ charge un registre. Ainsi, si \verb+OPL+ ne charge pas de registre (c'es-à-dire que son \verb+rA+ est égal à \verb+RNONE+), cela signifique qu'il s'agit en réalité d'une instruction de type \verb+IOPL+ et on renvoiedonc \verb+valC+ plutôt que \verb+valA+.
+
+Nous avons procédé d'une manière strictement identique pour modifier le fichier HCL de la version pipelinée du simulateur.
+
+\paragraph{}IMAGES FICHIERS DE TEST UTILISÉS
+
+
+\subsection{Factorisation de irmovl avec rrmovl}
+\paragraph{}La factorisation de \verb+irmovl+ avec \verb+rrmovl+ s'est faite de la même manière que celle de \verb+IOPL+ avec \verb+OPL+. Nous avons dû à nouveau éditer le fichier \verb+misc/isa.c+ pour que l'instruction \verb+rrmovl+, normalement codée sur 2 bits, soit désormais codée sur 6 bits, à l'image de l'instruction \verb+irmovl+.
+
+L'édition des fichiers HCL s'est également faite de la même façon.
+
+\subsection{Factorisation de push, pop, call, ret}
+
+
+\section{Exercice 2}
+
+
+
+\section{Exercice 3}
+
+\section*{Conclusion}
+
+\end{document}
