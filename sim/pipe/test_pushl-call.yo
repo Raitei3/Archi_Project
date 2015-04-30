@@ -1,0 +1,52 @@
+                      | 
+  0x000: 208501000000 | irmovl 1,%ebp
+  0x006: 208400020000 | irmovl stack,%esp
+  0x00c: 00           | nop
+  0x00d: 00           | nop
+  0x00e: 00           | nop
+  0x00f: 00           | nop
+  0x010: 00           | nop
+  0x011: a05800020000 | pushl %ebp
+  0x017: 00           | nop
+  0x018: 00           | nop
+  0x019: 00           | nop
+  0x01a: 00           | nop
+  0x01b: 00           | nop
+  0x01c: 204500020000 | rrmovl %esp,%ebp
+  0x022: 205400020000 | rrmovl %ebp,%esp
+  0x028: 00           | nop
+  0x029: 00           | nop
+  0x02a: 00           | nop
+  0x02b: 00           | nop
+  0x02c: 00           | nop
+  0x02d: b058         | popl %ebp
+                      | #enter %ebp,%ebp
+                      | #rrmovl %ebp,%esp
+                      | #popl %ebp
+  0x02f: 00           | nop
+  0x030: 00           | nop
+  0x031: 00           | nop
+  0x032: 00           | nop
+  0x033: 00           | nop
+  0x034: a18840000000 | call tamere
+  0x03a: 00           | nop
+  0x03b: 00           | nop
+  0x03c: 00           | nop
+  0x03d: 00           | nop
+  0x03e: 00           | nop
+  0x03f: 10           | halt
+                      | 
+  0x040:              | tamere :
+  0x040: 608501000000 | 	iaddl 1,%ebp
+  0x046: 00           | 	nop
+  0x047: 00           | 	nop
+  0x048: 00           | 	nop
+  0x049: 00           | 	nop
+  0x04a: 00           | 	nop
+  0x04b: b188         | 	ret
+                      | 	
+                      | 
+                      | 
+                      | 
+  0x200:              | .pos 0x200
+  0x200:              | stack:

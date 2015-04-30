@@ -1,13 +1,20 @@
                       | 
   0x000: 208501000000 | irmovl 1,%ebp
   0x006: 208400020000 | irmovl stack,%esp
-  0x00c: a058         | pushl %ebp
-  0x00e: 204500020000 | rrmovl %esp,%ebp
-  0x014: 205400020000 | rrmovl %ebp,%esp
-  0x01a: c058         | popl %ebp
-  0x01c: d0           | enter
-  0x01d: 205400020000 | rrmovl %ebp,%esp
-  0x023: c058         | popl %ebp
+  0x00c: a05800020000 | pushl %ebp
+  0x012: 204500020000 | rrmovl %esp,%ebp
+  0x018: 205400020000 | rrmovl %ebp,%esp
+  0x01e: b05800       | popl %ebp
+                      | #enter %ebp,%ebp
+                      | #rrmovl %ebp,%esp
+                      | #popl %ebp
+  0x021: a18828000000 | call tamere
+  0x027: 10           | halt
+                      | 
+  0x028:              | tamere :
+  0x028: 608501000000 | 	iaddl 1,%ebp
+  0x02e: b18801       | 	ret
+                      | 	
                       | 
                       | 
                       | 

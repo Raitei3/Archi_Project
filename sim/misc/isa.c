@@ -69,9 +69,9 @@ instr_t instruction_set[] =
     {"jne",    HPACK(I_JXX, J_NE), 5, I_ARG, 1, 4, NO_ARG, 0, 0 },
     {"jge",    HPACK(I_JXX, J_GE), 5, I_ARG, 1, 4, NO_ARG, 0, 0 },
     {"jg",     HPACK(I_JXX, J_G), 5, I_ARG, 1, 4, NO_ARG, 0, 0 },
-    {"call",   HPACK(I_CALL, 0),    5, I_ARG, 1, 4, NO_ARG, 0, 0 },
-    {"ret",    HPACK(I_RET, 0), 1, NO_ARG, 0, 0, NO_ARG, 0, 0 },
-    {"pushl",  HPACK(I_PUSHL, 0) , 2, R_ARG, 1, 1, NO_ARG, 0, 0 },
+    {"call",   HPACK(I_CALL, 1),    6, I_ARG, 2, 4, NO_ARG, 0, 0 },
+    {"ret",    HPACK(I_RET, 1), 2, NO_ARG, 0, 0, NO_ARG, 0, 0 },
+    {"pushl",  HPACK(I_PUSHL, 0) , 6, R_ARG, 1, 1, NO_ARG, 0, 0 },
     {"popl",   HPACK(I_POPL, 0) ,  2, R_ARG, 1, 1, NO_ARG, 0, 0 },
     {"enter",  HPACK(I_ENTER, 0),  1 ,NO_ARG, 0, 0, NO_ARG , 0, 0 },
     {"enter1",  HPACK(I_ENTER, 1),  1 ,NO_ARG, 0, 0, NO_ARG , 0, 0 },
@@ -827,6 +827,7 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	else
 	    s->pc = ftpc;
 	break;
+    /*
     case I_CALL:
 	if (!ok1) {
 	    if (error_file)
@@ -850,8 +851,11 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	}
 	s->pc = cval;
 	break;
-    case I_RET:
+    */
+    
+    //case I_RET:
 	/* Return Instruction.  Pop address from stack */
+    /*
 	dval = get_reg_val(s->r, REG_ESP);
 	if (!get_word_val(s->m, dval, &val)) {
 	    if (error_file)
@@ -862,6 +866,7 @@ exc_t step_state(state_ptr s, FILE *error_file)
 	}
 	set_reg_val(s->r, REG_ESP, dval + 4);
 	s->pc = val;
+    */
 	break;
     case I_PUSHL:
 	if (!ok1) {
