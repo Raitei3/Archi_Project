@@ -1,0 +1,71 @@
+\documentclass[12pt]{article}
+
+% Chargement des packages nécessaires
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{graphicx}
+
+
+
+
+\title{Architecture des Ordinateurs : Rapport de Projet}
+
+\author{Licence 2 d'Informatique\\ 
+  Architecture des Ordinateurs\\
+  Projet de Borde Antoine et Clement Nerestand}
+
+
+
+
+\begin{document}
+
+\maketitle
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section*{Introduction}
+
+\paragraph{} Au travers de ce rapport nous allons vous presenter le projet
+ de l'UE architecture des ordinateurs ainsi que le travail que nous avons 
+ effectué dessus.
+
+\paragraph{} Ce projet a pour but d'étendre notre compréhension et notre 
+maitrise du simulateur d'architecture y86 qui est une version simplifié
+du x86 normes des processeurs actuels. Pour cela nous allons chercher à 
+étendre le jeu d'instruction disponible en y86.
+
+\paragraph{} Le projet ce présente sous forme de trois excercises
+articulés autour des trois etapes
+necessaire a l'ajout d'une nouvelle instruction à savoir la liberation
+des icodes, rendre possible l'utilisation de plusieurs instructions en
+une et pour finir l'implementation des instructions à rajouter.
+
+\paragraph{} En effet le code d'une instruction commance toujours par le
+ icode qui n'est rien d'autre que le numerau de l'instruction et qui
+ donc est parfaitement indispensable. Hors il se trouve que dans le simulateur
+ y86 tout les icodes sont deja utilisés par une instruction. Il va donc nous
+ falloir factoriser des instructions en une afin de liberer des icodes.
+
+\paragraph{} Pour ce qui est de permettre a notre simulateur d'éffectuer
+plusieur instruction en une nous devront trouver une astuce nous permettant
+d'injecter plusieur instruction les une a la suite des autre chacune ayant un
+comportement different. Nous allons pour cela jouer avec le ifun qui ce situe
+juste aprés le icode et qui permet de différencier plusieur instruction possedant le meme icode.
+
+\paragraph{} Quand a l'implementation a proprement parler de nos instruction il
+sagira de jouer avec le simulateur afin de bien gerer le comportement de nos instruction.
+
+\newpage
+
+
+\section{Exercice 1 : De la place dans les opcodes}
+\subsection{Factorisation de ALU et ALUI}
+
+
+
+\end{document}
