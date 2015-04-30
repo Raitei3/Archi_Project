@@ -109,6 +109,7 @@ intsig W_dstE 'mem_wb_curr->deste'	# Destination E register ID
 intsig W_valE  'mem_wb_curr->vale'      # ALU E value
 intsig W_dstM 'mem_wb_curr->destm'	# Destination M register ID
 intsig W_valM  'mem_wb_curr->valm'	# Memory M value
+intsig W_ifun 'mem_wb_curr->ifun'
 
 ####################################################################
 #    Control Signal Definitions.                                   #
@@ -121,7 +122,7 @@ int f_pc = [
 	# Mispredicted branch.  Fetch at incremented PC
 	M_icode == JXX && !M_Bch : M_valA;
 	# Completion of RET instruction.
-	W_icode == RET : W_valM;
+	W_icode == POPL && W_ifun == 1 : W_valM;
 	# Default: Use predicted value of PC
 	1 : F_predPC;
 ];
@@ -132,11 +133,11 @@ bool need_regids =
 
 # Does fetched instruction require a constant word?
 bool need_valC =
-	f_icode in { RRMOVL, RMMOVL, MRMOVL, JXX, CALL, OPL };
+	(f_icode == PUSHL && f_ifun == 1) || f_icode in { RRMOVL, RMMOVL, MRMOVL, JXX, PUSHL, OPL };
 
 bool instr_valid = f_icode in 
 	{ NOP, HALT, RRMOVL, RMMOVL, MRMOVL,
-	       OPL, JXX, CALL, RET, PUSHL, POPL, ENTER };
+	       OPL, JXX, PUSHL, POPL, ENTER };
 
 int instr_next_ifun =[
 	f_icode == ENTER && f_ifun== 0 :1;
@@ -146,7 +147,8 @@ int instr_next_ifun =[
 
 # Predict next value of PC
 int new_F_predPC = [
-	f_icode in { JXX, CALL } : f_valC;
+	f_icode == PUSHL && f_ifun == 1 : f_valC;
+	f_icode in { JXX } : f_valC;
 	1 : f_valP;
 ];
 
@@ -156,9 +158,10 @@ int new_F_predPC = [
 
 ## What register should be used as the A source?
 int new_E_srcA = [
+	D_icode == PUSHL && D_ifun == 0 : D_rA;
 	D_icode == ENTER && D_ifun == 0 : REBP;
-	D_icode in { RRMOVL, RMMOVL, OPL, PUSHL } : D_rA;
-	D_icode in { POPL, RET, ENTER } : RESP;
+	D_icode in { RRMOVL, RMMOVL, OPL } : D_rA;
+	D_icode in { POPL, ENTER } : RESP;
 	1 : RNONE; # Don't need register
 ];
 
@@ -180,14 +183,16 @@ int new_E_dstE = [
 
 ## What register should be used as the M destination?
 int new_E_dstM = [
-	D_icode in { MRMOVL, POPL } : D_rA;
+	D_icode == POPL && D_ifun== 0 : D_rA;
+	D_icode in { MRMOVL } : D_rA;
 	1 : DNONE;  # Don't need register DNONE, not RNONE
 ];
 
 ## What should be the A value?
 ## Forward into decode stage for valA
 int new_E_valA = [
-	D_icode in { CALL, JXX } : D_valP; # Use incremented PC
+	D_icode == PUSHL && D_ifun == 1: D_valP;
+	D_icode in {  JXX } : D_valP; # Use incremented PC
 	d_srcA == E_dstE : e_valE;    # Forward valE from execute
 	d_srcA == M_dstM : m_valM;    # Forward valM from memory
 	d_srcA == M_dstE : M_valE;    # Forward valE from memory
@@ -243,8 +248,8 @@ bool set_cc = E_icode in { OPL};
 
 ## Select memory address
 int mem_addr = [
-M_icode in { RMMOVL, PUSHL, CALL, MRMOVL } : M_valE;
-	M_icode in { POPL, RET } : M_valA;
+M_icode in { RMMOVL, PUSHL, MRMOVL } : M_valE;
+	M_icode in { POPL} : M_valA;
 	M_icode==ENTER && M_ifun==0 : M_valE;
 	# Other instructions don't need address
 ];
@@ -253,7 +258,7 @@ M_icode in { RMMOVL, PUSHL, CALL, MRMOVL } : M_valE;
 bool mem_read = M_icode in { MRMOVL, POPL, RET };
 
 ## Set write control signal
-bool mem_write = M_icode in { RMMOVL, PUSHL, CALL } || (M_icode==ENTER && M_ifun==0);
+bool mem_write = M_icode in { RMMOVL, PUSHL} || (M_icode==ENTER && M_ifun==0);
 
 
 ################ Pipeline Register Control #########################
@@ -262,7 +267,9 @@ bool mem_write = M_icode in { RMMOVL, PUSHL, CALL } || (M_icode==ENTER && M_ifun
 # At most one of these can be true.
 bool F_bubble =
 	# Inject bubbles instead of fetching while ret passes through pipeline
-	RET in { D_icode, E_icode, M_icode } ||
+	D_icode == POPL && D_ifun == 1 ||
+	E_icode == POPL && E_ifun == 1 ||
+	M_icode == POPL && M_ifun == 1 ||
 	# Maching is halting, stop fetching
 	HALT in { f_icode, D_icode, E_icode, M_icode, W_icode };
 bool F_stall =

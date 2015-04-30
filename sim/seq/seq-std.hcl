@@ -85,11 +85,11 @@ bool need_regids =
 
 # Does fetched instruction require a constant word?
 bool need_valC =
-	icode in { RRMOVL, RMMOVL, MRMOVL, JXX, CALL, OPL };
+	icode in { RRMOVL, RMMOVL, MRMOVL, JXX, PUSHL, OPL };
 
 bool instr_valid = icode in 
 	{ NOP, HALT, RRMOVL, RMMOVL, MRMOVL,
-	       OPL, JXX, CALL, RET, PUSHL, POPL, ENTER };
+	       OPL, JXX, PUSHL, POPL, ENTER };
 int instr_next_ifun = [
 		icode == ENTER && ifun == 0 : 1;
 		1 : -1;
@@ -100,6 +100,7 @@ int instr_next_ifun = [
 
 ## What register should be used as the A source?
 int srcA = [
+	icode == PUSHL && ifun == 0 : rA;
 	icode == ENTER && ifun == 0 : REBP;
 	icode in { RRMOVL, RMMOVL, OPL, PUSHL } : rA;
 	icode in { POPL, RET,ENTER } : RESP;
@@ -109,7 +110,7 @@ int srcA = [
 ## What register should be used as the B source?
 int srcB = [
 	icode in { OPL, RMMOVL, MRMOVL } : rB;
-	icode in { PUSHL, POPL, CALL, RET } : RESP;
+	icode in { PUSHL, POPL, RET } : RESP;
 	icode == ENTER && ifun == 0 : RESP;
 	1 : RNONE;  # Don't need register
 ];
@@ -118,13 +119,14 @@ int srcB = [
 int dstE = [
 	icode == ENTER && ifun == 1 : REBP;
 	icode in { RRMOVL, OPL } : rB;
-	icode in { PUSHL, POPL, CALL, RET, ENTER } : RESP;
+	icode in { PUSHL, POPL, ENTER } : RESP;
 	1 : RNONE;  # Don't need register
 ];
 
 ## What register should be used as the M destination?
 int dstM = [
-	icode in { MRMOVL, POPL } : rA;
+	icode == POPL && ifun == 0 : rA;
+	icode in { MRMOVL } : rA;
 	1 : RNONE;  # Don't need register
 ];
 
@@ -139,7 +141,7 @@ int aluA = [
 	icode == RRMOVL : valA;
 	icode == ENTER && ifun == 1 : valA;
 	icode in { RMMOVL, MRMOVL} : valC;
-	icode in { CALL, PUSHL,ENTER } : -4;
+	icode in { PUSHL,ENTER } : -4;
 	icode in { RET, POPL } : 4;
 	# Other instructions don't need ALU
 ];
@@ -147,7 +149,7 @@ int aluA = [
 ## Select input B to ALU
 int aluB = [
 	icode == ENTER && ifun==1 : 0;
-	icode in { RMMOVL, MRMOVL, OPL, CALL, PUSHL, RET, POPL, ENTER } : valB;
+	icode in { RMMOVL, MRMOVL, OPL, PUSHL, RET, POPL, ENTER } : valB;
 	icode in { RRMOVL } : 0;
 	# Other instructions don't need ALU
 ];
@@ -167,10 +169,10 @@ bool set_cc = icode in { OPL };
 bool mem_read = icode in { MRMOVL, POPL, RET };
 
 ## Set write control signal
-bool mem_write = icode in { RMMOVL, PUSHL, CALL, ENTER } || (icode == ENTER && ifun==0);
+bool mem_write = icode in { RMMOVL, PUSHL, ENTER } || (icode == ENTER && ifun==0);
 ## Select memory address
 int mem_addr = [
-	icode in { RMMOVL, PUSHL, CALL, MRMOVL } : valE;
+	icode in { RMMOVL, PUSHL, MRMOVL } : valE;
 	icode in { POPL, RET } : valA;
 	icode == ENTER && ifun == 0 : valE;
 	# Other instructions don't need address
@@ -179,10 +181,11 @@ int mem_addr = [
 ## Select memory input data
 int mem_data = [
 	# Value from register
-	icode in { RMMOVL, PUSHL } : valA;
+	icode in { RMMOVL } : valA;
+	icode == PUSHL && ifun == 0: valA;
 	icode == ENTER && ifun == 0 : valA;
 	# Return PC
-	icode == CALL : valP;
+	icode == PUSHL && ifun==1 : valP;
 	# Default: Don't write anything
 ];
 
@@ -192,11 +195,11 @@ int mem_data = [
 
 int new_pc = [
 	# Call.  Use instruction constant
-	icode == CALL : valC;
+	icode == PUSHL && ifun== 1 : valC;
 	# Taken branch.  Use instruction constant
 	icode == JXX && Bch : valC;
 	# Completion of RET instruction.  Use value from stack
-	icode == RET : valM;
+	icode == POPL && ifun == 1 : valM;
 	# Default: Use incremented PC
 	1 : valP;
 ];
