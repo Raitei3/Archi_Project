@@ -5,7 +5,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[francais]{babel}
 \usepackage{graphicx}
-
+\usepackage{parskip}
 
 
 
@@ -13,7 +13,7 @@
 
 \author{Licence 2 d'Informatique\\ 
   Architecture des Ordinateurs\\
-  Projet de Borde Antoine et Clement Nerestand}
+  Projet de Borde Antoine et Clement Nerestan}
 
 
 
@@ -45,8 +45,8 @@ necessaire a l'ajout d'une nouvelle instruction à savoir la liberation
 des icodes, rendre possible l'utilisation de plusieurs instructions en
 une et pour finir l'implementation des instructions à rajouter.
 
-\paragraph{} En effet le code d'une instruction commance toujours par le
- icode qui n'est rien d'autre que le numerau de l'instruction et qui
+\paragraph{} En effet le code d'une instruction commence toujours par le
+ icode qui n'est rien d'autre que le numero de l'instruction et qui
  donc est parfaitement indispensable. Hors il se trouve que dans le simulateur
  y86 tout les icodes sont deja utilisés par une instruction. Il va donc nous
  falloir factoriser des instructions en une afin de liberer des icodes.
@@ -65,7 +65,48 @@ sagira de jouer avec le simulateur afin de bien gerer le comportement de nos ins
 
 \section{Exercice 1 : De la place dans les opcodes}
 \subsection{Factorisation de ALU et ALUI}
+L'objectif de cette exercice est de libérer des opcodes pour celà nous allons factoriser certains opcodes principalement ceux de l'ALU puis irmovl et rrmovl.
 
+Pour commencer nous avons suivis les instructions données dans le sujet afin de supprimer des opcodes. Une fois celà fais nous avons clarifié le code HCL en supprimant l'ensemble des doublons pour celà nous avons remplacer l'ensemble des IOPL par des OPL et lorsque nous avions 2 OPL nous en supprimions un.
 
+Ensuite il nous fallais différencier si l'OPL avis besoin d'utiliser une contante ou non. Pour ce faire nous nous sommes servis du fais que OPL utilise la valeur de rA alors que IOPL charge une constante ce qui est indiqué par le fais que rA vaille RNONE. Nous avons donc  modifié les fichiers HCL afin de pouvoir différencier si l'on doit utiliser valA ou valC en se servant de la valeur de rA (ou E\_srcA pour la version pipeliné). Après avoir testé ces modifications à l'aide de programme simple nous avions encore des problèmes.
 
+ Après recherche nous avons compris qu'il fallais changer la taille de opérateur addl, subl, andl, xorl, sall et sarl en les faisant passer de 2 à 6 octets, nous avons effectué celà dans "isa.c" où se trouve un tableau contenant l'ensemble des informations sur les icodes. 
+
+ Nous avons compris qu'il fallais faire cette modifications après que l'on nous ai indiqué la présence de ce tableau. Après avoir chercher à comprendre ce tableau nous avons fini par comprendre que à l'origine les OPL n'était que sur 2 octets alors que les IOPL après réflexion nous avons compris que les IOPL utilisé 4 octets de plus pour l'addresse mémoire de la constante ce qui nous a ammené à faire la modification décrite plus haut. 
+
+\subsection{Factorisation de irmovl et rrmovl}
+Afin de libérer un second opcode nous avons dut factorisé irmovl et rrmovl.
+
+Après une obsrevation du fonctionnement de irmovl et rrmovl nous avons compris que la factorisation s'effectuerai comme celle de ALU et ALUI ce qui fais que la factorisation c'est faite sans difficulté.
+
+\newpage
+
+\section{Exercice 2 : Ajout du support}
+
+L'objectif de cet exercice est de pouvoir faire éxecuter plusieur instruction en utilisant une seule instruction. Pour ce faire nous allons utiliser la valeur de ifun. Le principe sera tant que la valeur de ifun ne sera pas -1 le processeur injectera lui meme une autre instruction.
+
+\subsection{Version Sequentielle}
+Ici nous allons indiqué l'utilité de ce qui nous a été demandé d'ajouté ou modifié dans l'exercice.
+
+Tout d'abord nous avons  ajouté la fonction instr\_next\_ifun cette fonction retournera un ifun avec une valeur de -1 ce qui indiquera qu'il faudra passer à l'instruction suivante.
+
+Ensuite nous avons dut ajouter le prototype de la fonction gen\_instr\_next\_ifun ensuite nous avons dut ajouter 
+\begin{verbatim}
+if(gen_instr_next_ifun () != -1)
+	ifun = gen_instr_next_ifun();
+else
+\end{verbatim}
+Ce qui permet au processeur de savoir quelle ifun renvoyer si jamais l'ifun ne vaut pas -1 et donc que le processeur doit lui meme injecter une nouvelle instruction.
+
+Enfin nous avons ajouter 
+\begin{verbatim}
+if (gen_instr_next_ifun() == -1)
+avant
+pc_in = gen_new_pc();
+\end{verbatim}
+qui permet de mettre à jour le PC seulement si la nouvelle instruction n'est pas ajouter par le processeur.
+
+\subsection{Version Pipeliné}
+Les ajout sont les meme que sur sequentielle les différences sont que les valeurs sont contenus dans une structures. De plus nous avons dut réfléchire pour l'implémentation de la boucle else qui doit de finir avant valp++ car dans ce bloc est gérer le cas où l'instruction n'est pas injecté par le processeur.
 \end{document}
