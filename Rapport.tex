@@ -109,4 +109,14 @@ qui permet de mettre à jour le PC seulement si la nouvelle instruction n'est pa
 
 \subsection{Version Pipeliné}
 Les ajout sont les meme que sur sequentielle les différences sont que les valeurs sont contenus dans une structures. De plus nous avons dut réfléchire pour l'implémentation de la boucle else qui doit de finir avant valp++ car dans ce bloc est gérer le cas où l'instruction n'est pas injecté par le processeur.
+\newpage
+\section{Exercice 3 : Ajout d'instructions}
+\subsection{Ajout de "Enter"}
+L'objectif de l'ajout de cette instruction est de permettre d'effectuer les instructions push \%ebp puis rrmovl \%esp,\%ebp en une seul instruction dans le code.
+
+Pour celà il faut créer deux instructions que l'on peut ajouter grace aux instructions libérées dans l'exercice 1. En effet il est nécessaire de créer 2 instructions car l'instruction se déroulera en 2 étapes. La première fera le pushl \%ebp, et  aura un ifun à 0 ce qui fais que le processeur injectera la deuxieme instruction de enter qui elle fera le rrmovl. Enfin cette deuxième instruction retournera un "next" ifun de -1 ce qui indiquera que la procahine instruction ne sera pas injecté par le processeur mais par le code pour celà il va falloir mettre le PC à jour.
+
+L'implémentation n'est pas réellement compliqué car dans le cadre de l'implémentation dans le HCL l'instruction enter étant identique à un IPUSHL et enter1 à un RRMOVL. La grosse modification qui difère des autres instructions que l'on a dut introduire est de détecter l'instruction enter avec l'ifun à zero afin de renvoyer 1 comme valeur du prochain ifun. 
+
+L'autre point particulier fut de comprendre qu'il fallais accordé la valeur des ifun de nos instructions dans le tableau présent dans "isa.c" .
 \end{document}
