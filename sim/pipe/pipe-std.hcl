@@ -39,12 +39,14 @@ intsig JREG	'I_JREG'
 intsig LEAVE	'I_LEAVE'
 
 intsig ENTER 'I_ENTER'
+intsig MUL 'I_MUL'
 
 ##### Symbolic representation of Y86 Registers referenced explicitly #####
 intsig RESP     'REG_ESP'    	# Stack Pointer
 intsig REBP     'REG_EBP'    	# Frame Pointer
 intsig RNONE    'REG_NONE'   	# Special value indicating "no register"
 intsig DNONE    'DEST_NONE'     # "no destination register"
+intsig REAX 	'REG_EAX'
 
 ##### ALU Functions referenced explicitly ##########################
 intsig ALUADD	'A_ADD'		# ALU should add its arguments
@@ -113,6 +115,7 @@ intsig W_ifun 'mem_wb_curr->ifun'
 
 ####################################################################
 #    Control Signal Definitions.                                   #
+intsig cc 'cc'
 ####################################################################
 
 ################ Fetch Stage     ###################################
@@ -121,6 +124,7 @@ intsig W_ifun 'mem_wb_curr->ifun'
 int f_pc = [
 	# Mispredicted branch.  Fetch at incremented PC
 	M_icode == JXX && !M_Bch : M_valA;
+	M_icode == MUL && M_ifun==1 : M_valA;
 	# Completion of RET instruction.
 	W_icode == POPL && W_ifun == 1 : W_valM;
 	# Default: Use predicted value of PC
@@ -129,7 +133,7 @@ int f_pc = [
 
 # Does fetched instruction require a regid byte?
 bool need_regids =
-	f_icode in { RRMOVL, OPL, PUSHL, POPL, RMMOVL, MRMOVL };
+	f_icode in { RRMOVL, OPL, PUSHL, POPL, RMMOVL, MRMOVL,MUL };
 
 # Does fetched instruction require a constant word?
 bool need_valC =
@@ -137,12 +141,17 @@ bool need_valC =
 
 bool instr_valid = f_icode in 
 	{ NOP, HALT, RRMOVL, RMMOVL, MRMOVL,
-	       OPL, JXX, PUSHL, POPL, ENTER };
+	       OPL, JXX, PUSHL, POPL, ENTER, MUL };
 
 int instr_next_ifun =[
 	f_icode == ENTER && f_ifun== 0 :1;
-	#f_icode == OPL : 0;
-			1 : -1;
+
+	f_icode == MUL && f_ifun == 1 && cc==2: -1;
+	f_icode == MUL && f_ifun == 2 : 1;
+	f_icode == MUL && f_ifun == 0 : 1;
+	f_icode == MUL && f_ifun == 1 : 2;
+
+	1 : -1;
 	];
 
 # Predict next value of PC
@@ -162,6 +171,10 @@ int new_E_srcA = [
 	D_icode == ENTER && D_ifun == 0 : REBP;
 	D_icode in { RRMOVL, RMMOVL, OPL } : D_rA;
 	D_icode in { POPL, ENTER } : RESP;
+
+	D_icode == MUL && D_ifun == 2 : D_rA;
+
+
 	1 : RNONE; # Don't need register
 ];
 
@@ -170,6 +183,11 @@ int new_E_srcB = [
 	D_icode == ENTER && D_ifun == 0 : RESP;
 	D_icode in { OPL, RMMOVL, MRMOVL } : D_rB;
 	D_icode in { PUSHL, POPL, CALL, RET} : RESP;
+
+	D_icode == MUL && D_ifun == 1 : D_rB;
+	D_icode == MUL && D_ifun == 2 : REAX;
+
+
 	1 : RNONE;  # Don't need register
 ];
 
@@ -178,6 +196,10 @@ int new_E_dstE = [
 	D_icode == ENTER && D_ifun == 1 : REBP;
 	D_icode in { RRMOVL, OPL } : D_rB;
 	D_icode in { PUSHL, POPL, CALL, RET,ENTER } : RESP;
+
+	D_icode == MUL && D_ifun ==0 : REAX;
+	D_icode == MUL && D_ifun == 1 : D_rB;
+	D_icode == MUL && D_ifun == 2 && cc != 2 : REAX;
 	1 : DNONE;  # Don't need register DNONE, not RNONE
 ];
 
@@ -216,21 +238,32 @@ int new_E_valB = [
 int aluA = [
 	E_icode == OPL && E_srcA== RNONE:E_valC;
 	E_icode == OPL : E_valA;
+
 	E_icode == RRMOVL && E_srcA== RNONE:E_valC;
 	E_icode == RRMOVL : E_valA;
+
 	E_icode == ENTER && E_ifun == 1 : E_valA;
+
 	E_icode in { RMMOVL, MRMOVL } : E_valC;
 	E_icode in { CALL, PUSHL, ENTER } : -4;
 	E_icode in { RET, POPL } : 4;
+
+	E_icode == MUL && E_ifun == 1 : -1;
+	E_icode == MUL && E_ifun == 2 : E_valA;
 	# Other instructions don't need ALU
 ];
 
 ## Select input B to ALU
 int aluB = [
-E_icode == ENTER && E_ifun == 1 : 0;
+	E_icode == ENTER && E_ifun == 1 : 0;
+
 	E_icode in { RMMOVL, MRMOVL, OPL, CALL, 
 		      PUSHL, RET, POPL,ENTER } : E_valB;
 	E_icode in { RRMOVL } : 0;
+
+	E_icode == MUL && E_ifun == 0: 0 ;
+	E_icode == MUL && E_ifun == 1 : E_valB;
+	E_icode == MUL && E_ifun == 2 : E_valB;
 	# Other instructions don't need ALU
 ];
 
@@ -241,7 +274,7 @@ int alufun = [
 ];
 
 ## Should the condition codes be updated?
-bool set_cc = E_icode in { OPL};
+bool set_cc = E_icode in { OPL} || (E_icode == MUL && E_ifun ==1);
 
 
 ################ Memory Stage ######################################
@@ -267,9 +300,9 @@ bool mem_write = M_icode in { RMMOVL, PUSHL} || (M_icode==ENTER && M_ifun==0);
 # At most one of these can be true.
 bool F_bubble =
 	# Inject bubbles instead of fetching while ret passes through pipeline
-	D_icode == POPL && D_ifun == 1 ||
-	E_icode == POPL && E_ifun == 1 ||
-	M_icode == POPL && M_ifun == 1 ||
+	(D_icode == POPL && D_ifun == 1) ||
+	(E_icode == POPL && E_ifun == 1) ||
+	(M_icode == POPL && M_ifun == 1) ||
 	# Maching is halting, stop fetching
 	HALT in { f_icode, D_icode, E_icode, M_icode, W_icode };
 bool F_stall =
@@ -292,6 +325,7 @@ bool E_stall = 0;
 bool E_bubble =
 	# Mispredicted branch, drop instruction
 	(E_icode == JXX && !e_Bch) ||
+	(E_icode == MUL && E_ifun==1) ||
 	# Conditions for a load/use hazard, stalling in decode
 	E_dstM in { d_srcA, d_srcB};
 

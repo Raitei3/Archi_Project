@@ -75,6 +75,9 @@ instr_t instruction_set[] =
     {"popl",   HPACK(I_POPL, 0) ,  2, R_ARG, 1, 1, NO_ARG, 0, 0 },
     {"enter",  HPACK(I_ENTER, 0),  1 ,NO_ARG, 0, 0, NO_ARG , 0, 0 },
     {"enter1",  HPACK(I_ENTER, 1),  1 ,NO_ARG, 0, 0, NO_ARG , 0, 0 },
+    {"mul",    HPACK(I_MUL, 0),  2 ,R_ARG, 1, 1, R_ARG , 1, 0 },
+    {"mul1",   HPACK(I_MUL, 1),  2 ,R_ARG, 1, 1, R_ARG , 1, 0 },
+    {"mul2",   HPACK(I_MUL, 2),  2 ,R_ARG, 1, 1, R_ARG , 1, 0 },
     /* JB versions immédiates de toutes les opérations */
     {"iaddl",  HPACK(I_ALUI, A_ADD),  6, I_ARG, 2, 4, R_ARG, 1, 0 },
     {"isubl",  HPACK(I_ALUI, A_SUB),  6, I_ARG, 2, 4, R_ARG, 1, 0 },

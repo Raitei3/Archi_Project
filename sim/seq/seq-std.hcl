@@ -40,11 +40,13 @@ intsig JREG	'I_JREG'
 intsig LEAVE	'I_LEAVE'
 
 intsig ENTER  'I_ENTER'
+intsig MUL 'I_MUL'
 
 ##### Symbolic representation of Y86 Registers referenced explicitly #####
 intsig RESP     'REG_ESP'    	# Stack Pointer
 intsig REBP     'REG_EBP'    	# Frame Pointer
 intsig RNONE    'REG_NONE'   	# Special value indicating "no register"
+intsig REAX		'REG_EAX'
 
 ##### ALU Functions referenced explicitly                            #####
 intsig ALUADD	'A_ADD'		# ALU should add its arguments
@@ -75,13 +77,14 @@ intsig valM	'valm'			# Value read from memory
 
 ####################################################################
 #    Control Signal Definitions.                                   #
+intsig cc 'cc'
 ####################################################################
 
 ################ Fetch Stage     ###################################
 
 # Does fetched instruction require a regid byte?
 bool need_regids =
-	icode in { RRMOVL, OPL, PUSHL, POPL, RMMOVL, MRMOVL };
+	icode in { RRMOVL, OPL, PUSHL, POPL, RMMOVL, MRMOVL,MUL };
 
 # Does fetched instruction require a constant word?
 bool need_valC =
@@ -89,19 +92,28 @@ bool need_valC =
 
 bool instr_valid = icode in 
 	{ NOP, HALT, RRMOVL, RMMOVL, MRMOVL,
-	       OPL, JXX, PUSHL, POPL, ENTER };
+	       OPL, JXX, PUSHL, POPL, ENTER,MUL };
 int instr_next_ifun = [
 		icode == ENTER && ifun == 0 : 1;
+		icode == NOP && ifun == 0 : 1;
+
+		icode == MUL && ifun == 2 && cc==2 : -1;
+		icode == MUL && ifun == 2 : 1;	
+		icode == MUL && ifun == 0: 1;
+		icode == MUL && ifun == 1 : 2;
 		1 : -1;
 ];
-#icode == OPL : 0;		# ligne faisant boucler les OPL (permet de tester si sa marche)
 
 ################ Decode Stage    ###################################
 
 ## What register should be used as the A source?
 int srcA = [
 	icode == PUSHL && ifun == 0 : rA;
+
 	icode == ENTER && ifun == 0 : REBP;
+
+	icode == MUL && ifun == 2 : rA;
+
 	icode in { RRMOVL, RMMOVL, OPL, PUSHL } : rA;
 	icode in { POPL, RET,ENTER } : RESP;
 	1 : RNONE; # Don't need register
@@ -109,8 +121,12 @@ int srcA = [
 
 ## What register should be used as the B source?
 int srcB = [
-	icode in { OPL, RMMOVL, MRMOVL } : rB;
+	icode == MUL && ifun == 1 : rB;
+	icode==MUL && ifun == 2 : REAX;
+
+	icode in { OPL, RMMOVL, MRMOVL} : rB;
 	icode in { PUSHL, POPL, RET } : RESP;
+
 	icode == ENTER && ifun == 0 : RESP;
 	1 : RNONE;  # Don't need register
 ];
@@ -120,6 +136,10 @@ int dstE = [
 	icode == ENTER && ifun == 1 : REBP;
 	icode in { RRMOVL, OPL } : rB;
 	icode in { PUSHL, POPL, ENTER } : RESP;
+
+	icode == MUL && ifun==0 : REAX;
+	icode == MUL && ifun==2 && cc != 2 : REAX;
+	icode == MUL && ifun == 1 : rB;
 	1 : RNONE;  # Don't need register
 ];
 
@@ -137,9 +157,15 @@ int dstM = [
 int aluA = [
 	icode == OPL && rA== RNONE : valC;
 	icode == OPL: valA;
+
 	icode == RRMOVL && rA ==RNONE: valC;
 	icode == RRMOVL : valA;
+
 	icode == ENTER && ifun == 1 : valA;
+
+	icode == MUL && ifun == 1 : -1;
+	icode == MUL && ifun == 2 : valA;
+	
 	icode in { RMMOVL, MRMOVL} : valC;
 	icode in { PUSHL,ENTER } : -4;
 	icode in { RET, POPL } : 4;
@@ -151,6 +177,10 @@ int aluB = [
 	icode == ENTER && ifun==1 : 0;
 	icode in { RMMOVL, MRMOVL, OPL, PUSHL, RET, POPL, ENTER } : valB;
 	icode in { RRMOVL } : 0;
+
+	icode == MUL && ifun == 0: 0 ;
+	icode == MUL && ifun == 1 : valB;
+	icode == MUL && ifun == 2: valB;
 	# Other instructions don't need ALU
 ];
 
@@ -161,7 +191,7 @@ int alufun = [
 ];
 
 ## Should the condition codes be updated?
-bool set_cc = icode in { OPL };
+bool set_cc = icode in { OPL  }|| (icode == MUL && ifun == 1);
 
 ################ Memory Stage    ###################################
 
