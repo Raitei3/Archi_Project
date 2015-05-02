@@ -8,7 +8,7 @@ int sim_main(int argc, char *argv[]);
 int main(int argc, char *argv[]){return sim_main(argc,argv);}
 int gen_f_pc()
 {
-    return ((((ex_mem_curr->icode) == (I_JXX)) & !(ex_mem_curr->takebranch)) ? (ex_mem_curr->vala) : (((ex_mem_curr->icode) == (I_MUL)) & ((ex_mem_curr->ifun) == 1)) ? (ex_mem_curr->vala) : (((mem_wb_curr->icode) == (I_POPL)) & ((mem_wb_curr->ifun) == 1)) ? (mem_wb_curr->valm) : 1 ? (pc_curr->pc) : 0);
+    return ((((ex_mem_curr->icode) == (I_JXX)) & !(ex_mem_curr->takebranch)) ? (ex_mem_curr->vala) : (((mem_wb_curr->icode) == (I_POPL)) & ((mem_wb_curr->ifun) == 1)) ? (mem_wb_curr->valm) : 1 ? (pc_curr->pc) : 0);
 }
 
 int gen_need_regids()
@@ -28,7 +28,7 @@ int gen_instr_valid()
 
 int gen_instr_next_ifun()
 {
-    return ((((if_id_next->icode) == (I_ENTER)) & ((if_id_next->ifun) == 0)) ? 1 : ((((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 1)) & ((cc) == 2)) ? -1 : (((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 2)) ? 1 : (((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 0)) ? 1 : (((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 1)) ? 2 : 1 ? -1 : 0);
+    return ((((if_id_next->icode) == (I_ENTER)) & ((if_id_next->ifun) == 0)) ? 1 : (((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 0)) ? 1 : (((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 1)) ? 2 : ((((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 2)) & ((cc) == 2)) ? -1 : (((if_id_next->icode) == (I_MUL)) & ((if_id_next->ifun) == 2)) ? 1 : 1 ? -1 : 0);
 }
 
 int gen_new_F_predPC()
@@ -118,7 +118,7 @@ int gen_D_stall()
 
 int gen_D_bubble()
 {
-    return (((id_ex_curr->icode) == (I_JXX)) & !(ex_mem_next->takebranch));
+    return ((((id_ex_curr->icode) == (I_JXX)) & !(ex_mem_next->takebranch)) | (((id_ex_curr->icode) == (I_MUL)) & ((id_ex_curr->ifun) == 1)));
 }
 
 int gen_E_stall()

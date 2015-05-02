@@ -124,7 +124,6 @@ intsig cc 'cc'
 int f_pc = [
 	# Mispredicted branch.  Fetch at incremented PC
 	M_icode == JXX && !M_Bch : M_valA;
-	M_icode == MUL && M_ifun==1 : M_valA;
 	# Completion of RET instruction.
 	W_icode == POPL && W_ifun == 1 : W_valM;
 	# Default: Use predicted value of PC
@@ -146,10 +145,10 @@ bool instr_valid = f_icode in
 int instr_next_ifun =[
 	f_icode == ENTER && f_ifun== 0 :1;
 
-	f_icode == MUL && f_ifun == 1 && cc==2: -1;
-	f_icode == MUL && f_ifun == 2 : 1;
-	f_icode == MUL && f_ifun == 0 : 1;
+	f_icode == MUL && f_ifun == 0 :	1;
 	f_icode == MUL && f_ifun == 1 : 2;
+	f_icode == MUL && f_ifun == 2 && cc==2: -1;
+	f_icode == MUL && f_ifun == 2 : 1;
 
 	1 : -1;
 	];
@@ -317,7 +316,8 @@ bool D_stall =
 
 bool D_bubble =
 	# Mispredicted branch, drop instruction
-	(E_icode == JXX && !e_Bch);
+	(E_icode == JXX && !e_Bch) ||
+	(E_icode == MUL && E_ifun == 1);
 
 # Should I stall or inject a bubble into Pipeline Register E?
 # At most one of these can be true.
@@ -325,7 +325,7 @@ bool E_stall = 0;
 bool E_bubble =
 	# Mispredicted branch, drop instruction
 	(E_icode == JXX && !e_Bch) ||
-	(E_icode == MUL && E_ifun==1) ||
+	(E_icode == MUL && E_ifun == 1) ||
 	# Conditions for a load/use hazard, stalling in decode
 	E_dstM in { d_srcA, d_srcB};
 
