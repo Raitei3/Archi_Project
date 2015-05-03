@@ -94,13 +94,14 @@ bool instr_valid = icode in
 	{ NOP, HALT, RRMOVL, RMMOVL, MRMOVL,
 	       OPL, JXX, PUSHL, POPL, ENTER,MUL };
 int instr_next_ifun = [
-		icode == ENTER && ifun == 0 : 1;
-		icode == NOP && ifun == 0 : 1;
 
-		icode == MUL && ifun == 2 && cc==2 : -1;
+		icode == ENTER && ifun == 0 : 1;	#permet l'injection de ENTER 1
+
+		icode == MUL && ifun == 2 && cc==2 : -1;	#permet les injections des instructions MUL
 		icode == MUL && ifun == 2 : 1;	
 		icode == MUL && ifun == 0: 1;
 		icode == MUL && ifun == 1 : 2;
+
 		1 : -1;
 ];
 
@@ -108,44 +109,48 @@ int instr_next_ifun = [
 
 ## What register should be used as the A source?
 int srcA = [
-	icode == PUSHL && ifun == 0 : rA;
+	icode == PUSHL && ifun == 0 : rA; #ifun = 0 est le vrais pushl ifun = 1 designe call
 
 	icode == ENTER && ifun == 0 : REBP;
 
 	icode == MUL && ifun == 2 : rA;
 
 	icode in { RRMOVL, RMMOVL, OPL, PUSHL } : rA;
-	icode in { POPL, RET,ENTER } : RESP;
+	icode in { POPL,ENTER } : RESP;
 	1 : RNONE; # Don't need register
 ];
 
 ## What register should be used as the B source?
 int srcB = [
+	icode == ENTER && ifun == 0 : RESP;
+
 	icode == MUL && ifun == 1 : rB;
-	icode==MUL && ifun == 2 : REAX;
+	icode == MUL && ifun == 2 : REAX;
 
 	icode in { OPL, RMMOVL, MRMOVL} : rB;
-	icode in { PUSHL, POPL, RET } : RESP;
+	icode in { PUSHL, POPL } : RESP;
 
-	icode == ENTER && ifun == 0 : RESP;
 	1 : RNONE;  # Don't need register
 ];
 
 ## What register should be used as the E destination?
 int dstE = [
 	icode == ENTER && ifun == 1 : REBP;
-	icode in { RRMOVL, OPL } : rB;
-	icode in { PUSHL, POPL, ENTER } : RESP;
 
 	icode == MUL && ifun==0 : REAX;
 	icode == MUL && ifun==2 && cc != 2 : REAX;
 	icode == MUL && ifun == 1 : rB;
+
+	icode in { RRMOVL, OPL } : rB;
+	icode in { PUSHL, POPL, ENTER } : RESP;
 	1 : RNONE;  # Don't need register
 ];
 
 ## What register should be used as the M destination?
 int dstM = [
+
 	icode == POPL && ifun == 0 : rA;
+
 	icode in { MRMOVL } : rA;
 	1 : RNONE;  # Don't need register
 ];
@@ -155,7 +160,7 @@ int dstM = [
 ## Select input A to ALU
 
 int aluA = [
-	icode == OPL && rA== RNONE : valC;
+	icode == OPL && rA == RNONE : valC;
 	icode == OPL: valA;
 
 	icode == RRMOVL && rA ==RNONE: valC;
@@ -165,22 +170,24 @@ int aluA = [
 
 	icode == MUL && ifun == 1 : -1;
 	icode == MUL && ifun == 2 : valA;
-	
+
 	icode in { RMMOVL, MRMOVL} : valC;
 	icode in { PUSHL,ENTER } : -4;
-	icode in { RET, POPL } : 4;
+	icode in {  POPL } : 4;
 	# Other instructions don't need ALU
 ];
 
 ## Select input B to ALU
 int aluB = [
 	icode == ENTER && ifun==1 : 0;
-	icode in { RMMOVL, MRMOVL, OPL, PUSHL, RET, POPL, ENTER } : valB;
-	icode in { RRMOVL } : 0;
 
 	icode == MUL && ifun == 0: 0 ;
 	icode == MUL && ifun == 1 : valB;
 	icode == MUL && ifun == 2: valB;
+
+	icode in { RMMOVL, MRMOVL, OPL, PUSHL, RET, POPL, ENTER } : valB;
+	icode in { RRMOVL } : 0;
+
 	# Other instructions don't need ALU
 ];
 
@@ -191,31 +198,34 @@ int alufun = [
 ];
 
 ## Should the condition codes be updated?
-bool set_cc = icode in { OPL  }|| (icode == MUL && ifun == 1);
+bool set_cc = icode in { OPL  }|| (icode == MUL && ifun == 1); #onvmet a jour le cc aprés la decrementation du compteur
 
 ################ Memory Stage    ###################################
 
 ## Set read control signal
-bool mem_read = icode in { MRMOVL, POPL, RET };
+bool mem_read = icode in { MRMOVL, POPL };
 
 ## Set write control signal
 bool mem_write = icode in { RMMOVL, PUSHL, ENTER } || (icode == ENTER && ifun==0);
+
 ## Select memory address
 int mem_addr = [
-	icode in { RMMOVL, PUSHL, MRMOVL } : valE;
-	icode in { POPL, RET } : valA;
 	icode == ENTER && ifun == 0 : valE;
+
+	icode in { RMMOVL, PUSHL, MRMOVL } : valE;
+	icode in { POPL } : valA;
 	# Other instructions don't need address
 ];
 
 ## Select memory input data
 int mem_data = [
 	# Value from register
-	icode in { RMMOVL } : valA;
 	icode == PUSHL && ifun == 0: valA;
-	icode == ENTER && ifun == 0 : valA;
-	# Return PC
 	icode == PUSHL && ifun==1 : valP;
+
+	icode == ENTER && ifun == 0 : valA;
+
+	icode in { RMMOVL } : valA;
 	# Default: Don't write anything
 ];
 

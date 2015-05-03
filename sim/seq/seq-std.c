@@ -23,7 +23,7 @@ int gen_instr_valid()
 
 int gen_instr_next_ifun()
 {
-    return ((((icode) == (I_ENTER)) & ((ifun) == 0)) ? 1 : (((icode) == (I_NOP)) & ((ifun) == 0)) ? 1 : ((((icode) == (I_MUL)) & ((ifun) == 2)) & ((cc) == 2)) ? -1 : (((icode) == (I_MUL)) & ((ifun) == 2)) ? 1 : (((icode) == (I_MUL)) & ((ifun) == 0)) ? 1 : (((icode) == (I_MUL)) & ((ifun) == 1)) ? 2 : 1 ? -1 : 0);
+    return ((((icode) == (I_ENTER)) & ((ifun) == 0)) ? 1 : ((((icode) == (I_MUL)) & ((ifun) == 2)) & ((cc) == 2)) ? -1 : (((icode) == (I_MUL)) & ((ifun) == 2)) ? 1 : (((icode) == (I_MUL)) & ((ifun) == 0)) ? 1 : (((icode) == (I_MUL)) & ((ifun) == 1)) ? 2 : 1 ? -1 : 0);
 }
 
 int gen_srcA()

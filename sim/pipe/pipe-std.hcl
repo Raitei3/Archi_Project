@@ -125,7 +125,7 @@ int f_pc = [
 	# Mispredicted branch.  Fetch at incremented PC
 	M_icode == JXX && !M_Bch : M_valA;
 	# Completion of RET instruction.
-	W_icode == POPL && W_ifun == 1 : W_valM;
+	W_icode == POPL && W_ifun == 1 : W_valM; #POPL et ifun = 1 est enfette RET
 	# Default: Use predicted value of PC
 	1 : F_predPC;
 ];
@@ -156,6 +156,7 @@ int instr_next_ifun =[
 # Predict next value of PC
 int new_F_predPC = [
 	f_icode == PUSHL && f_ifun == 1 : f_valC;
+
 	f_icode in { JXX } : f_valC;
 	1 : f_valP;
 ];
@@ -167,11 +168,13 @@ int new_F_predPC = [
 ## What register should be used as the A source?
 int new_E_srcA = [
 	D_icode == PUSHL && D_ifun == 0 : D_rA;
+
 	D_icode == ENTER && D_ifun == 0 : REBP;
-	D_icode in { RRMOVL, RMMOVL, OPL } : D_rA;
-	D_icode in { POPL, ENTER } : RESP;
 
 	D_icode == MUL && D_ifun == 2 : D_rA;
+
+	D_icode in { RRMOVL, RMMOVL, OPL } : D_rA;
+	D_icode in { POPL, ENTER } : RESP;
 
 
 	1 : RNONE; # Don't need register
@@ -180,11 +183,12 @@ int new_E_srcA = [
 ## What register should be used as the B source?
 int new_E_srcB = [
 	D_icode == ENTER && D_ifun == 0 : RESP;
-	D_icode in { OPL, RMMOVL, MRMOVL } : D_rB;
-	D_icode in { PUSHL, POPL, CALL, RET} : RESP;
 
 	D_icode == MUL && D_ifun == 1 : D_rB;
 	D_icode == MUL && D_ifun == 2 : REAX;
+
+	D_icode in { OPL, RMMOVL, MRMOVL } : D_rB;
+	D_icode in { PUSHL, POPL} : RESP;
 
 
 	1 : RNONE;  # Don't need register
@@ -193,18 +197,21 @@ int new_E_srcB = [
 ## What register should be used as the E destination?
 int new_E_dstE = [
 	D_icode == ENTER && D_ifun == 1 : REBP;
-	D_icode in { RRMOVL, OPL } : D_rB;
-	D_icode in { PUSHL, POPL, CALL, RET,ENTER } : RESP;
 
 	D_icode == MUL && D_ifun ==0 : REAX;
 	D_icode == MUL && D_ifun == 1 : D_rB;
 	D_icode == MUL && D_ifun == 2 && cc != 2 : REAX;
+
+	D_icode in { RRMOVL, OPL } : D_rB;
+	D_icode in { PUSHL, POPL, ENTER } : RESP;
+
 	1 : DNONE;  # Don't need register DNONE, not RNONE
 ];
 
 ## What register should be used as the M destination?
 int new_E_dstM = [
 	D_icode == POPL && D_ifun== 0 : D_rA;
+
 	D_icode in { MRMOVL } : D_rA;
 	1 : DNONE;  # Don't need register DNONE, not RNONE
 ];
@@ -213,6 +220,7 @@ int new_E_dstM = [
 ## Forward into decode stage for valA
 int new_E_valA = [
 	D_icode == PUSHL && D_ifun == 1: D_valP;
+
 	D_icode in {  JXX } : D_valP; # Use incremented PC
 	d_srcA == E_dstE : e_valE;    # Forward valE from execute
 	d_srcA == M_dstM : m_valM;    # Forward valM from memory
@@ -243,12 +251,13 @@ int aluA = [
 
 	E_icode == ENTER && E_ifun == 1 : E_valA;
 
-	E_icode in { RMMOVL, MRMOVL } : E_valC;
-	E_icode in { CALL, PUSHL, ENTER } : -4;
-	E_icode in { RET, POPL } : 4;
-
 	E_icode == MUL && E_ifun == 1 : -1;
 	E_icode == MUL && E_ifun == 2 : E_valA;
+
+	E_icode in { RMMOVL, MRMOVL } : E_valC;
+	E_icode in { PUSHL, ENTER } : -4;
+	E_icode in { POPL } : 4;
+
 	# Other instructions don't need ALU
 ];
 
@@ -256,13 +265,14 @@ int aluA = [
 int aluB = [
 	E_icode == ENTER && E_ifun == 1 : 0;
 
+	E_icode == MUL && E_ifun == 0: 0 ;
+	E_icode == MUL && E_ifun == 1 : E_valB;
+	E_icode == MUL && E_ifun == 2 : E_valB;
+
 	E_icode in { RMMOVL, MRMOVL, OPL, CALL, 
 		      PUSHL, RET, POPL,ENTER } : E_valB;
 	E_icode in { RRMOVL } : 0;
 
-	E_icode == MUL && E_ifun == 0: 0 ;
-	E_icode == MUL && E_ifun == 1 : E_valB;
-	E_icode == MUL && E_ifun == 2 : E_valB;
 	# Other instructions don't need ALU
 ];
 
@@ -280,9 +290,10 @@ bool set_cc = E_icode in { OPL} || (E_icode == MUL && E_ifun ==1);
 
 ## Select memory address
 int mem_addr = [
-M_icode in { RMMOVL, PUSHL, MRMOVL } : M_valE;
-	M_icode in { POPL} : M_valA;
 	M_icode==ENTER && M_ifun==0 : M_valE;
+
+	M_icode in { RMMOVL, PUSHL, MRMOVL } : M_valE;
+	M_icode in { POPL} : M_valA;
 	# Other instructions don't need address
 ];
 
@@ -316,16 +327,17 @@ bool D_stall =
 
 bool D_bubble =
 	# Mispredicted branch, drop instruction
-	(E_icode == JXX && !e_Bch) ||
-	(E_icode == MUL && E_ifun == 1);
+	(E_icode == MUL && E_ifun == 1)||
 
+	(E_icode == JXX && !e_Bch);
 # Should I stall or inject a bubble into Pipeline Register E?
 # At most one of these can be true.
 bool E_stall = 0;
 bool E_bubble =
 	# Mispredicted branch, drop instruction
-	(E_icode == JXX && !e_Bch) ||
 	(E_icode == MUL && E_ifun == 1) ||
+
+	(E_icode == JXX && !e_Bch)||
 	# Conditions for a load/use hazard, stalling in decode
 	E_dstM in { d_srcA, d_srcB};
 
