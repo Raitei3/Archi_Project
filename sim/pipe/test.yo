@@ -1,34 +1,34 @@
                       | 
   0x000: 208501000000 | irmovl 1,%ebp
   0x006: 208400020000 | irmovl stack,%esp
-  0x00c: a058         | pushl %ebp
-  0x00e: 204500020000 | rrmovl %esp,%ebp
-  0x014: 205400020000 | rrmovl %ebp,%esp
-  0x01a: c058         | popl %ebp
-  0x01c: 00           | nop
-  0x01d: 00           | nop
-  0x01e: 00           | nop
-  0x01f: 00           | nop
+  0x00c: a05800020000 | pushl %ebp
+  0x012: 204500020000 | rrmovl %esp,%ebp
+  0x018: 205400020000 | rrmovl %ebp,%esp
+  0x01e: b058         | popl %ebp
   0x020: 00           | nop
   0x021: 00           | nop
-  0x022: d0           | enter
+  0x022: 00           | nop
   0x023: 00           | nop
   0x024: 00           | nop
   0x025: 00           | nop
-  0x026: 00           | nop
+  0x026: c0           | enter
   0x027: 00           | nop
   0x028: 00           | nop
-  0x029: 205400020000 | rrmovl %ebp,%esp
-  0x02f: 00           | nop
-  0x030: 00           | nop
-  0x031: 00           | nop
-  0x032: 00           | nop
+  0x029: 00           | nop
+  0x02a: 00           | nop
+  0x02b: 00           | nop
+  0x02c: 00           | nop
+  0x02d: 205400020000 | rrmovl %ebp,%esp
   0x033: 00           | nop
-  0x034: c058         | popl %ebp
+  0x034: 00           | nop
+  0x035: 00           | nop
   0x036: 00           | nop
   0x037: 00           | nop
-  0x038: 00           | nop
-  0x039: 10           | halt
+  0x038: b058         | popl %ebp
+  0x03a: 00           | nop
+  0x03b: 00           | nop
+  0x03c: 00           | nop
+  0x03d: 10           | halt
                       | 
                       | 
                       | 

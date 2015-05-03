@@ -298,7 +298,7 @@ int mem_addr = [
 ];
 
 ## Set read control signal
-bool mem_read = M_icode in { MRMOVL, POPL, RET };
+bool mem_read = M_icode in { MRMOVL, POPL };
 
 ## Set write control signal
 bool mem_write = M_icode in { RMMOVL, PUSHL} || (M_icode==ENTER && M_ifun==0);
