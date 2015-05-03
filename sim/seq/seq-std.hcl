@@ -98,7 +98,7 @@ int instr_next_ifun = [
 		icode == ENTER && ifun == 0 : 1;	#permet l'injection de ENTER 1
 
 		icode == MUL && ifun == 2 && cc==2 : -1;	#permet les injections des instructions MUL
-		icode == MUL && ifun == 2 : 1;	
+		icode == MUL && ifun == 2 : 1;				#dans le bon ordre
 		icode == MUL && ifun == 0: 1;
 		icode == MUL && ifun == 1 : 2;
 
@@ -109,10 +109,10 @@ int instr_next_ifun = [
 
 ## What register should be used as the A source?
 int srcA = [
-	icode == PUSHL && ifun == 0 : rA; #ifun = 0 est le vrais pushl ifun = 1 designe call
+	icode == PUSHL && ifun == 0 : rA; 	#ifun = 0 est le vrais pushl ifun = 1 designe call
 
-	icode == ENTER && ifun == 0 : REBP;
-
+	icode == ENTER && ifun == 0 : REBP; #ENTER et ifun = 0 tient lieu de PUSHL %ebp.
+										# ifun = 1 est un rrmovl %esp,%ebp
 	icode == MUL && ifun == 2 : rA;
 
 	icode in { RRMOVL, RMMOVL, OPL, PUSHL } : rA;
