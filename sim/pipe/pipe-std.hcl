@@ -310,7 +310,7 @@ bool mem_write = M_icode in { RMMOVL, PUSHL} || (M_icode==ENTER && M_ifun==0);
 # At most one of these can be true.
 bool F_bubble =
 	# Inject bubbles instead of fetching while ret passes through pipeline
-	(D_icode == POPL && D_ifun == 1) ||
+	(D_icode == POPL && D_ifun == 1) ||			#on remet les bulle généré initialementpar ret
 	(E_icode == POPL && E_ifun == 1) ||
 	(M_icode == POPL && M_ifun == 1) ||
 	# Maching is halting, stop fetching
@@ -327,7 +327,7 @@ bool D_stall =
 
 bool D_bubble =
 	# Mispredicted branch, drop instruction
-	(E_icode == MUL && E_ifun == 1)||
+	(E_icode == MUL && E_ifun == 1)||		#injection de bulle aprés la decrementation du compteur
 
 	(E_icode == JXX && !e_Bch);
 # Should I stall or inject a bubble into Pipeline Register E?
@@ -335,7 +335,7 @@ bool D_bubble =
 bool E_stall = 0;
 bool E_bubble =
 	# Mispredicted branch, drop instruction
-	(E_icode == MUL && E_ifun == 1) ||
+	(E_icode == MUL && E_ifun == 1) ||		#injection de bulle aprés la decrementation du compteur
 
 	(E_icode == JXX && !e_Bch)||
 	# Conditions for a load/use hazard, stalling in decode
