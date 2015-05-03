@@ -153,7 +153,7 @@ Nous avons donc fait en sorte que quand le processeur exécute une instruction t
 
 \paragraph{} Cette instruction, plus difficile à implémenter que la précédente, doit multiplier les deux registre donner en paramètre(ebx et ecx) et mettre le résultat dans le registre \%eax. Nous nous sommes tout de suite demandé combien d'instructions il allait nous falloir pour réussir cela. Nous avons décider de partir sur trois comportement différent.
 
-\paragragh{} La première des instructions se chargera d'initialiser la valeur du registre eax a 0 afin d'éviter tout problème(soit un irmovl de 1 vers eax). La deuxième décrémentera le registre passé en deuxième paramètre qui fera office de compteur(soit un addl de 1 vers le registre ecx). La dernière ajoutera la valeur du premier registre en paramètre ebx a eax (soit un addl de ebx vers eax).
+\paragraph{} La première des instructions se chargera d'initialiser la valeur du registre eax a 0 afin d'éviter tout problème(soit un irmovl de 1 vers eax). La deuxième décrémentera le registre passé en deuxième paramètre qui fera office de compteur(soit un addl de 1 vers le registre ecx). La dernière ajoutera la valeur du premier registre en paramètre ebx a eax (soit un addl de ebx vers eax).
 
 \paragraph{} Nous nous somme d’abord concentré sur la version séquentiel. Nous avons tenter d’implémenter les 3 comportement un par un en testant entre chaque étape si l'instruction fonctionnait bien. Une fois nos trois instruction bien implémentées il fallait créer une boucle qui fonctionne selon nos besoin. Pour cela nous avons suivit les conseille de la consigne qui suggère de se servir des flag de contrôle.
 
